@@ -1,0 +1,30 @@
+{
+  "name": "poster-forge",
+  "version": "1.0.0",
+  "description": "Generate movie/TV posters with rating overlays for Plex/Jellyfin/Emby",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "scan": "tsx src/cli.ts scan",
+    "process": "tsx src/cli.ts process"
+  },
+  "keywords": ["plex", "jellyfin", "emby", "posters", "ratings", "imdb", "tmdb"],
+  "author": "Matt Beatty",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "chokidar": "^4.0.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
