@@ -157,8 +157,10 @@ export class PosterProcessor {
 
   // Process a single item by partial info
   async processSingle(itemInfo: Partial<MediaItem>): Promise<ProcessResult> {
+    const folderPath = itemInfo.folderPath || '';
     const item: MediaItem = {
-      folderPath: itemInfo.folderPath || '',
+      folderPath,
+      folderName: itemInfo.folderName || folderPath.split('/').pop() || '',
       title: itemInfo.title || '',
       year: itemInfo.year,
       type: itemInfo.type || 'movie',
