@@ -1,37 +1,23 @@
-# PosterForge Docker Compose
-# Similar layout to rpdb-folders-docker
+version: '3.8'
 
 services:
-  posterforge:
+  poster-forge:
     build: .
-    image: posterforge:latest
-    container_name: posterforge
-    restart: unless-stopped
+    container_name: poster-forge
     ports:
-      - "8750:8750"
+      - "8760:8760"
     volumes:
-      # Config volume - stores settings
-      - ./config:/posterforge/config
-      # Media volume - your Plex/Jellyfin library
-      # Map your actual media folders here
-      - /path/to/your/movies:/posterforge/media/movies:rw
-      - /path/to/your/tvshows:/posterforge/media/tvshows:rw
+      # Your media folders (adjust paths for your setup)
+      - /mnt/user/media/movies:/media/movies:rw
+      - /mnt/user/media/tv:/media/tv:rw
+      # Persistent config/cache
+      - ./data:/app/data:rw
     environment:
-      # API Keys (required)
+      - TZ=Australia/Sydney
       - TMDB_API_KEY=${TMDB_API_KEY}
       - OMDB_API_KEY=${OMDB_API_KEY}
-      
-      # Media folders inside container
-      - MEDIA_FOLDERS=/posterforge/media/movies,/posterforge/media/tvshows
-      
-      # Poster style: badges, bar, or minimal
       - POSTER_STYLE=badges
-      
-      # Which ratings to show (max 3)
       - RATINGS=imdb,rt,metacritic
-      
-      # Don't overwrite existing posters
       - OVERWRITE=false
-      
-      # Web UI port
-      - PORT=8750
+      - WATCH_MODE=false
+    restart: unless-stopped

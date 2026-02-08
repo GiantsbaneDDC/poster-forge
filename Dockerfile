@@ -1,55 +1,30 @@
-# PosterForge - Docker Image
-# Similar to rpdb-folders-docker
-
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Install ALL dependencies (including devDeps for build)
-COPY package*.json ./
-RUN npm install
-
-# Copy source and build
-COPY src ./src
-COPY tsconfig.json ./
-RUN npm run build
-
-# Production image
 FROM node:20-alpine
 
-LABEL maintainer="Matt Beatty"
-LABEL description="Generate movie/TV posters with rating overlays for Plex/Jellyfin/Emby"
-LABEL org.opencontainers.image.source="https://github.com/GiantsbaneDDC/poster-forge"
-
 WORKDIR /app
 
-# Install production dependencies only
+# Install dependencies for sharp (native image processing)
+RUN apk add --no-cache python3 make g++ vips-dev
+
+# Copy package files
 COPY package*.json ./
-RUN npm install --omit=dev
 
-# Copy built files from builder
-COPY --from=builder /app/dist ./dist
+# Install dependencies
+RUN npm ci --only=production
 
-# Create config and media mount points
-RUN mkdir -p /posterforge/config /posterforge/media
+# Copy source
+COPY . .
 
-# Default environment
+# Build TypeScript
+RUN npm run build
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Environment
 ENV NODE_ENV=production
-ENV PORT=8750
-ENV MEDIA_FOLDERS=/posterforge/media
-ENV POSTER_STYLE=badges
-ENV RATINGS=imdb,rt,metacritic
-ENV OVERWRITE=false
+ENV PORT=8760
+ENV MEDIA_FOLDERS=/media/movies,/media/tv
 
-# Expose web UI port (same as RPDB for familiarity)
-EXPOSE 8750
+EXPOSE 8760
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8750/ || exit 1
-
-# Volume for persistent config
-VOLUME ["/posterforge/config", "/posterforge/media"]
-
-# Start the web UI
 CMD ["node", "dist/index.js"]

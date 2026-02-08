@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>PosterForge</Name>
+  <Repository>ghcr.io/giantsbaneddc/poster-forge:latest</Repository>
+  <Registry>https://ghcr.io/v2/giantsbaneddc/poster-forge</Registry>
+  <Branch>
+    <Tag>latest</Tag>
+    <TagDescription>Latest stable release</TagDescription>
+  </Branch>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/GiantsbaneDDC/poster-forge/issues</Support>
+  <Project>https://github.com/GiantsbaneDDC/poster-forge</Project>
+  <Overview>Generate movie/TV posters with rating badges (IMDB, Rotten Tomatoes, Metacritic) for Plex, Jellyfin, and Emby. Free RPDB alternative. Scans your media folders, fetches posters from TMDB, overlays ratings, and saves poster.jpg files.</Overview>
+  <Category>MediaApp:Video MediaServer:Video Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:8760]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/GiantsbaneDDC/poster-forge/master/unraid/my-PosterForge.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/GiantsbaneDDC/poster-forge/master/public/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled></DateInstalled>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="WebUI Port" Target="8760" Default="8760" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">8760</Config>
+  <Config Name="Movies Folder" Target="/media/movies" Default="/mnt/user/media/movies" Mode="rw" Description="Path to your movies folder" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media/movies</Config>
+  <Config Name="TV Shows Folder" Target="/media/tv" Default="/mnt/user/media/tv" Mode="rw" Description="Path to your TV shows folder" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/media/tv</Config>
+  <Config Name="Config Storage" Target="/app/data" Default="/mnt/user/appdata/poster-forge" Mode="rw" Description="Persistent storage for config and cache" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/poster-forge</Config>
+  <Config Name="TMDB API Key" Target="TMDB_API_KEY" Default="" Mode="" Description="Get free key at themoviedb.org/settings/api" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="OMDB API Key" Target="OMDB_API_KEY" Default="" Mode="" Description="Get free key at omdbapi.com/apikey.aspx (1000 req/day)" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Poster Style" Target="POSTER_STYLE" Default="badges" Mode="" Description="badges (corner), bar (bottom), or minimal (small)" Type="Variable" Display="always" Required="false" Mask="false">badges</Config>
+  <Config Name="Ratings to Show" Target="RATINGS" Default="imdb,rt,metacritic" Mode="" Description="Comma-separated: imdb, rt, metacritic, tmdb (max 3)" Type="Variable" Display="always" Required="false" Mask="false">imdb,rt,metacritic</Config>
+  <Config Name="Overwrite Existing" Target="OVERWRITE" Default="false" Mode="" Description="Replace existing poster.jpg files?" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Watch Mode" Target="WATCH_MODE" Default="false" Mode="" Description="Auto-process new content as it's added?" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Timezone" Target="TZ" Default="Australia/Sydney" Mode="" Description="Container timezone" Type="Variable" Display="advanced" Required="false" Mask="false">Australia/Sydney</Config>
+</Container>
