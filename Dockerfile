@@ -20,8 +20,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies for sharp (native image processing)
-RUN apk add --no-cache vips-dev
+# Install dependencies for sharp (native image processing) and fonts for SVG text rendering
+RUN apk add --no-cache vips-dev fontconfig ttf-dejavu ttf-liberation font-noto
 
 # Copy package files
 COPY package*.json ./

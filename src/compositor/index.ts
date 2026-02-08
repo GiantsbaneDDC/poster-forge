@@ -21,7 +21,7 @@ function createIMDbIcon(x: number, y: number, size: number): string {
   return `
     <g transform="translate(${x}, ${y}) scale(${scale})">
       <rect x="0" y="4" width="48" height="40" rx="6" fill="#F5C518"/>
-      <text x="24" y="33" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="22" font-weight="bold" fill="#000000">IMDb</text>
+      <text x="24" y="33" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="22" font-weight="bold" fill="#000000">IMDb</text>
     </g>
   `;
 }
@@ -57,7 +57,7 @@ function createMetacriticIcon(x: number, y: number, size: number, score: string)
   return `
     <g transform="translate(${x}, ${y}) scale(${scale})">
       <rect x="0" y="4" width="44" height="40" rx="4" fill="${bgColor}"/>
-      <text x="22" y="33" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#FFFFFF">${score}</text>
+      <text x="22" y="33" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="24" font-weight="bold" fill="#FFFFFF">${score}</text>
     </g>
   `;
 }
@@ -68,7 +68,7 @@ function createTMDBIcon(x: number, y: number, size: number): string {
   return `
     <g transform="translate(${x}, ${y}) scale(${scale})">
       <rect x="0" y="4" width="48" height="40" rx="6" fill="#0D253F"/>
-      <text x="24" y="30" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#01D277">TMDB</text>
+      <text x="24" y="30" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="14" font-weight="bold" fill="#01D277">TMDB</text>
     </g>
   `;
 }
@@ -105,7 +105,7 @@ function createRatingEntry(badge: RatingBadge, x: number, barHeight: number): { 
   
   // Add rating value text next to icon
   const textX = x + iconWidth + 8;
-  const textSvg = `<text x="${textX}" y="${textY}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF">${badge.value}</text>`;
+  const textSvg = `<text x="${textX}" y="${textY}" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF">${badge.value}</text>`;
   
   // Estimate text width
   const textWidth = badge.value.length * (fontSize * 0.6);
@@ -183,7 +183,7 @@ function createCornerOverlay(badges: RatingBadge[], width: number, height: numbe
     const textSvg = `
       <rect x="${padding - 5}" y="${y}" width="${badgeSize + 70}" height="${badgeSize}" rx="8" fill="rgba(0,0,0,0.8)"/>
       ${iconSvg}
-      <text x="${textX}" y="${textY}" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="#FFFFFF">${badge.value}</text>
+      <text x="${textX}" y="${textY}" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="22" font-weight="bold" fill="#FFFFFF">${badge.value}</text>
     `;
     
     return textSvg;
