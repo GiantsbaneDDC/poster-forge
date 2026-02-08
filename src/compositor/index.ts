@@ -10,23 +10,42 @@ export interface RatingBadge {
 // Rating badge colors
 const BADGE_COLORS = {
   imdb: '#F5C518',      // IMDB yellow
-  rt: '#FA320A',        // Rotten Tomatoes red
+  rt: '#FA320A',        // Rotten Tomatoes red  
   metacritic: '#66CC33', // Metacritic green
   tmdb: '#01D277',      // TMDB green
 };
 
-// Create an SVG rating badge
-function createBadgeSVG(badge: RatingBadge, index: number, style: 'badges' | 'bar' | 'minimal'): string {
+// Create a single rating badge for the bar style
+function createBarBadge(badge: RatingBadge, x: number, barHeight: number): string {
   const { type, value, color } = badge;
   
-  // Icon paths for each rating source
-  const icons: Record<string, string> = {
-    imdb: 'M5.5 2h3v12h-3V2zm5 0h3v12h-3V2z', // Simplified IMDB bars
-    rt: 'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z', // Tomato circle
-    metacritic: 'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z', // Circle
-    tmdb: 'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z', // Circle
+  const labels: Record<string, string> = {
+    imdb: 'IMDb',
+    rt: 'RT',
+    metacritic: 'META',
+    tmdb: 'TMDB',
   };
 
+  const badgeWidth = 70;
+  const badgeHeight = barHeight - 10;
+  const centerY = barHeight / 2;
+
+  return `
+    <g transform="translate(${x}, 5)">
+      <!-- Badge background -->
+      <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="6" fill="${color}" />
+      <!-- Source label -->
+      <text x="${badgeWidth/2}" y="${badgeHeight * 0.38}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="rgba(0,0,0,0.8)">${labels[type]}</text>
+      <!-- Rating value -->
+      <text x="${badgeWidth/2}" y="${badgeHeight * 0.78}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="black">${value}</text>
+    </g>
+  `;
+}
+
+// Create corner badge style
+function createCornerBadge(badge: RatingBadge, index: number): string {
+  const { type, value, color } = badge;
+  
   const labels: Record<string, string> = {
     imdb: 'IMDb',
     rt: 'RT',
@@ -34,64 +53,77 @@ function createBadgeSVG(badge: RatingBadge, index: number, style: 'badges' | 'ba
     tmdb: 'TMDB',
   };
 
-  if (style === 'badges') {
-    // Corner badge style
-    const y = 10 + (index * 50);
-    return `
-      <g transform="translate(10, ${y})">
-        <rect x="0" y="0" width="90" height="40" rx="6" fill="rgba(0,0,0,0.85)" />
-        <rect x="2" y="2" width="36" height="36" rx="4" fill="${color}" />
-        <text x="20" y="27" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="black">${labels[type]}</text>
-        <text x="62" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">${value}</text>
-      </g>
-    `;
-  } else if (style === 'minimal') {
-    // Small corner dots
-    const x = 10 + (index * 35);
-    return `
-      <g transform="translate(${x}, 10)">
-        <rect x="0" y="0" width="30" height="24" rx="4" fill="${color}" />
-        <text x="15" y="17" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="black">${value}</text>
-      </g>
-    `;
-  } else {
-    // Bar style at bottom
-    const x = 10 + (index * 80);
-    return `
-      <g transform="translate(${x}, 0)">
-        <rect x="0" y="0" width="70" height="30" rx="4" fill="${color}" />
-        <text x="35" y="12" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="black">${labels[type]}</text>
-        <text x="35" y="24" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="black">${value}</text>
-      </g>
-    `;
-  }
+  const y = 10 + (index * 52);
+  
+  return `
+    <g transform="translate(10, ${y})">
+      <rect x="0" y="0" width="95" height="44" rx="8" fill="rgba(0,0,0,0.85)" />
+      <rect x="3" y="3" width="38" height="38" rx="6" fill="${color}" />
+      <text x="22" y="28" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="rgba(0,0,0,0.9)">${labels[type]}</text>
+      <text x="68" y="30" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="bold" fill="white">${value}</text>
+    </g>
+  `;
 }
 
-// Create full overlay SVG
-function createOverlaySVG(
-  badges: RatingBadge[], 
-  width: number, 
-  height: number, 
-  style: 'badges' | 'bar' | 'minimal'
-): Buffer {
-  let badgesSVG = '';
-  let overlayHeight = height;
-  let overlayY = 0;
+// Create minimal corner badge
+function createMinimalBadge(badge: RatingBadge, index: number): string {
+  const { type, value, color } = badge;
+  const x = 8 + (index * 38);
+  
+  return `
+    <g transform="translate(${x}, 8)">
+      <rect x="0" y="0" width="34" height="26" rx="5" fill="${color}" />
+      <text x="17" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="rgba(0,0,0,0.9)">${value}</text>
+    </g>
+  `;
+}
 
-  if (style === 'bar') {
-    // Bottom bar
-    overlayHeight = 40;
-    overlayY = height - overlayHeight;
-    badgesSVG = `
-      <rect x="0" y="0" width="${width}" height="${overlayHeight}" fill="rgba(0,0,0,0.85)" />
-      ${badges.map((b, i) => createBadgeSVG(b, i, style)).join('')}
-    `;
-  } else {
-    badgesSVG = badges.map((b, i) => createBadgeSVG(b, i, style)).join('');
-  }
+// Create the black bar overlay with badges
+function createBarOverlay(badges: RatingBadge[], width: number, barHeight: number): Buffer {
+  const totalBadgeWidth = badges.length * 70 + (badges.length - 1) * 12; // badges + gaps
+  const startX = (width - totalBadgeWidth) / 2; // Center the badges
+  
+  const badgesSVG = badges.map((badge, i) => {
+    const x = startX + (i * 82); // 70px badge + 12px gap
+    return createBarBadge(badge, x, barHeight);
+  }).join('');
 
   const svg = `
-    <svg width="${width}" height="${style === 'bar' ? overlayHeight : height}" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${width}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
+      <!-- Gradient black bar for premium look -->
+      <defs>
+        <linearGradient id="barGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:rgba(0,0,0,0.95)" />
+          <stop offset="100%" style="stop-color:rgba(0,0,0,0.85)" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="${width}" height="${barHeight}" fill="url(#barGrad)" />
+      ${badgesSVG}
+    </svg>
+  `;
+
+  return Buffer.from(svg);
+}
+
+// Create corner badges overlay
+function createCornerOverlay(badges: RatingBadge[], width: number, height: number): Buffer {
+  const badgesSVG = badges.map((badge, i) => createCornerBadge(badge, i)).join('');
+
+  const svg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      ${badgesSVG}
+    </svg>
+  `;
+
+  return Buffer.from(svg);
+}
+
+// Create minimal overlay
+function createMinimalOverlay(badges: RatingBadge[], width: number, height: number): Buffer {
+  const badgesSVG = badges.map((badge, i) => createMinimalBadge(badge, i)).join('');
+
+  const svg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       ${badgesSVG}
     </svg>
   `;
@@ -117,15 +149,19 @@ export function ratingsTooBadges(
         color: BADGE_COLORS.imdb,
       });
     } else if (type === 'rt' && ratings.rottenTomatoes) {
+      // Clean up RT value
+      const rtValue = ratings.rottenTomatoes.replace('%', '');
       badges.push({
         type: 'rt',
-        value: `${ratings.rottenTomatoes}%`,
+        value: `${rtValue}%`,
         color: BADGE_COLORS.rt,
       });
     } else if (type === 'metacritic' && ratings.metacritic) {
+      // Clean up metacritic value
+      const mcValue = ratings.metacritic.replace('/100', '');
       badges.push({
         type: 'metacritic',
-        value: ratings.metacritic,
+        value: mcValue,
         color: BADGE_COLORS.metacritic,
       });
     } else if (type === 'tmdb' && tmdbRating && tmdbRating > 0) {
@@ -152,7 +188,7 @@ export async function createRatedPoster(
 ): Promise<Buffer> {
   const { 
     tmdbRating, 
-    style = 'badges', 
+    style = 'bar',  // Default to bar style now
     showRatings = ['imdb', 'rt', 'metacritic'] 
   } = options;
 
@@ -169,19 +205,23 @@ export async function createRatedPoster(
     return posterBuffer;
   }
 
-  // Create overlay SVG
-  const overlaySVG = createOverlaySVG(badges, width, height, style);
-
-  // Composite overlay onto poster
+  // Create overlay based on style
   let composite: sharp.Sharp;
   
   if (style === 'bar') {
-    // Bar goes at bottom
+    const barHeight = 50;
+    const overlaySVG = createBarOverlay(badges, width, barHeight);
     composite = sharp(posterBuffer).composite([
-      { input: overlaySVG, top: height - 40, left: 0 },
+      { input: overlaySVG, top: height - barHeight, left: 0 },
+    ]);
+  } else if (style === 'minimal') {
+    const overlaySVG = createMinimalOverlay(badges, width, height);
+    composite = sharp(posterBuffer).composite([
+      { input: overlaySVG, top: 0, left: 0 },
     ]);
   } else {
-    // Badges go at top-left
+    // badges style - corner badges
+    const overlaySVG = createCornerOverlay(badges, width, height);
     composite = sharp(posterBuffer).composite([
       { input: overlaySVG, top: 0, left: 0 },
     ]);
