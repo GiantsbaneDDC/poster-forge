@@ -1227,12 +1227,10 @@ app.get('/', (req, res) => {
 </html>`);
 });
 
-const config = getConfig();
+const appConfig = getConfig();
 const host = process.env.HOST || '0.0.0.0';
-app.listen(config.port, host, () => {
-  console.log(\`
-🎬 PosterForge running on http://\${host}:\${config.port}
-
-\${isConfigured() ? '✅ Configured and ready!' : '⚠️  Not configured - open the web UI to add API keys'}
-  \`);
+app.listen(appConfig.port, host, () => {
+  const status = isConfigured() ? '✅ Configured and ready!' : '⚠️  Not configured - open the web UI to add API keys';
+  console.log('🎬 PosterForge running on http://' + host + ':' + appConfig.port);
+  console.log(status);
 });
