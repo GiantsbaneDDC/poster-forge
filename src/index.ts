@@ -371,9 +371,10 @@ app.get('/', (req, res) => {
 });
 
 const config = getConfig();
-app.listen(config.port, () => {
+const host = process.env.HOST || '0.0.0.0';
+app.listen(config.port, host, () => {
   console.log(`
-🎬 PosterForge running on http://localhost:${config.port}
+🎬 PosterForge running on http://${host}:${config.port}
 
 ${isConfigured() ? '✅ Configured and ready!' : '⚠️  Not configured - open the web UI to add API keys'}
   `);
