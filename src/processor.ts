@@ -82,11 +82,19 @@ export class PosterProcessor {
         rottenTomatoes: null, 
         metacritic: null 
       };
+      
+      console.log(`   Type: ${item.type}, IMDB ID: ${imdbId || 'NOT FOUND'}`);
+      
       if (imdbId) {
         const omdbRatings = await this.omdb.getRatings(imdbId);
         if (omdbRatings) {
           ratings = omdbRatings;
+          console.log(`   Ratings: IMDb=${ratings.imdb?.rating || 'N/A'}, RT=${ratings.rottenTomatoes || 'N/A'}, MC=${ratings.metacritic || 'N/A'}`);
+        } else {
+          console.log(`   ⚠️ OMDB returned no ratings for ${imdbId}`);
         }
+      } else {
+        console.log(`   ⚠️ No IMDB ID - skipping OMDB lookup, no ratings will be shown`);
       }
 
       // Step 3: Create rated poster
