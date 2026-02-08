@@ -101,7 +101,7 @@ function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
   });
 
   const svg = `<svg width="${posterWidth}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
-    <rect x="0" y="0" width="${posterWidth}" height="${barHeight}" fill="rgba(0,0,0,0.92)"/>
+    <rect x="0" y="0" width="${posterWidth}" height="${barHeight}" fill="rgba(0,0,0,0.75)"/>
     ${svgContent}
   </svg>`;
 

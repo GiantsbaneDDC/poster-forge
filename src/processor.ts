@@ -201,34 +201,45 @@ export class PosterProcessor {
   }
 
   // Process all items in configured folders
-  async processAll(onProgress?: (result: ProcessResult, current: number, total: number) => void, dryRun = false): Promise<ProcessResult[]> {
+  async processAll(onProgress?: (result: ProcessResult, current: number, total: number) => void, dryRun = false, overwriteAll = false): Promise<ProcessResult[]> {
     const items = scanAllFolders(this.config.mediaFolders);
     const results: ProcessResult[] = [];
+    
+    // Temporarily set overwrite if regenerating all
+    const originalOverwrite = this.config.overwrite;
+    if (overwriteAll) {
+      this.config.overwrite = true;
+    }
 
-    console.log(`Found ${items.length} media items to process${dryRun ? ' (dry run)' : ''}`);
+    console.log(`Found ${items.length} media items to process${dryRun ? ' (dry run)' : ''}${overwriteAll ? ' (overwrite all)' : ''}`);
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      
-      if (dryRun) {
-        // For dry run, just check what would be processed
-        const wouldProcess = !item.hasPoster || this.config.overwrite;
-        results.push({
-          item,
-          success: true,
-          message: wouldProcess ? 'Would generate poster' : 'Would skip (poster exists)',
-        });
-      } else {
-        const result = await this.processItem(item);
-        results.push(result);
+    try {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        if (dryRun) {
+          // For dry run, just check what would be processed
+          const wouldProcess = !item.hasPoster || this.config.overwrite;
+          results.push({
+            item,
+            success: true,
+            message: wouldProcess ? 'Would generate poster' : 'Would skip (poster exists)',
+          });
+        } else {
+          const result = await this.processItem(item);
+          results.push(result);
+        }
+
+        if (onProgress) {
+          onProgress(results[results.length - 1], i + 1, items.length);
+        }
+
+        // Rate limiting - be nice to APIs (skip delay for dry run)
+        if (!dryRun) await this.delay(250);
       }
-
-      if (onProgress) {
-        onProgress(results[results.length - 1], i + 1, items.length);
-      }
-
-      // Rate limiting - be nice to APIs (skip delay for dry run)
-      if (!dryRun) await this.delay(250);
+    } finally {
+      // Restore original overwrite setting
+      this.config.overwrite = originalOverwrite;
     }
 
     return results;

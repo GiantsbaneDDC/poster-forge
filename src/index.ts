@@ -221,17 +221,18 @@ app.post('/api/process', async (req, res) => {
   }
 
   const dryRun = req.query.dryRun === 'true';
+  const overwrite = req.query.overwrite === 'true';
 
   isProcessing = true;
   processResults = [];
   processProgress = { current: 0, total: 0 };
 
-  res.json({ message: dryRun ? 'Dry run started' : 'Processing started' });
+  res.json({ message: dryRun ? 'Dry run started' : (overwrite ? 'Regenerating all...' : 'Processing started') });
 
   try {
     processResults = await processor.processAll((result, current, total) => {
       processProgress = { current, total };
-    }, dryRun);
+    }, dryRun, overwrite);
   } finally {
     isProcessing = false;
   }
@@ -908,10 +909,13 @@ app.get('/', (req, res) => {
           <i data-lucide="eye"></i> Dry Run
         </button>
         <button class="btn btn-success" onclick="processAll()" id="processBtn" disabled>
-          <i data-lucide="wand-2"></i> Generate All
+          <i data-lucide="wand-2"></i> Generate Missing
+        </button>
+        <button class="btn btn-primary" onclick="regenerateAll()" id="regenBtn" disabled>
+          <i data-lucide="refresh-cw"></i> Regenerate All
         </button>
         <button class="btn btn-secondary" onclick="refresh()">
-          <i data-lucide="refresh-cw"></i> Refresh
+          <i data-lucide="rotate-ccw"></i> Refresh
         </button>
       </div>
     </div>
@@ -1088,6 +1092,7 @@ app.get('/', (req, res) => {
       
       document.getElementById('configAlert').classList.toggle('hidden', configured);
       document.getElementById('processBtn').disabled = !configured;
+      document.getElementById('regenBtn').disabled = !configured;
       document.getElementById('dryRunBtn').disabled = !configured;
       
       // Update watcher status
@@ -1369,18 +1374,32 @@ app.get('/', (req, res) => {
       await runProcess(true);
     }
 
-    // Process all
+    // Process all (missing only)
     async function processAll() {
       if (!confirm('Generate posters for all pending items?\\n\\nExisting posters will NOT be overwritten.')) return;
-      await runProcess(false);
+      await runProcess(false, false);
+    }
+    
+    // Regenerate all (including existing)
+    async function regenerateAll() {
+      if (!confirm('⚠️ REGENERATE ALL POSTERS?\\n\\nThis will overwrite ALL existing poster.jpg files in your library.\\n\\nAre you sure?')) return;
+      if (!confirm('Really sure? This cannot be undone!')) return;
+      await runProcess(false, true);
     }
 
-    async function runProcess(dryRun) {
+    async function runProcess(dryRun, overwrite = false) {
       document.getElementById('processBtn').disabled = true;
+      document.getElementById('regenBtn').disabled = true;
       document.getElementById('dryRunBtn').disabled = true;
       document.getElementById('progressContainer').classList.add('active');
       
-      await fetch('/api/process' + (dryRun ? '?dryRun=true' : ''), { method: 'POST' });
+      let url = '/api/process';
+      const params = [];
+      if (dryRun) params.push('dryRun=true');
+      if (overwrite) params.push('overwrite=true');
+      if (params.length) url += '?' + params.join('&');
+      
+      await fetch(url, { method: 'POST' });
       polling = setInterval(pollProgress, 1000);
     }
 
@@ -1398,6 +1417,7 @@ app.get('/', (req, res) => {
         clearInterval(polling);
         polling = null;
         document.getElementById('processBtn').disabled = false;
+        document.getElementById('regenBtn').disabled = false;
         document.getElementById('dryRunBtn').disabled = false;
         document.getElementById('progressContainer').classList.remove('active');
         toast('Complete! ' + data.summary.success + ' succeeded, ' + data.summary.failed + ' failed.', 'success');
