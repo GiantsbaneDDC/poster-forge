@@ -1,4 +1,4 @@
-import chokidar from 'chokidar';
+import chokidar, { type FSWatcher } from 'chokidar';
 import path from 'path';
 import fs from 'fs';
 import { PosterProcessor } from './processor.js';
@@ -12,7 +12,7 @@ export interface WatcherOptions {
 }
 
 export class FolderWatcher {
-  private watchers: chokidar.FSWatcher[] = [];
+  private watchers: FSWatcher[] = [];
   private processor: PosterProcessor;
   private options: WatcherOptions;
   private processing = new Set<string>();
