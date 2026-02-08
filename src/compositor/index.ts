@@ -118,7 +118,7 @@ function createRatingEntry(badge: RatingBadge, x: number, barHeight: number): { 
 
 // Create the rating bar overlay
 function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
-  const barHeight = 60; // Much bigger bar
+  const barHeight = 85; // Much bigger bar
   const padding = 20;
   const gapBetweenBadges = 35;
   
@@ -300,7 +300,7 @@ export async function createRatedPoster(
   let composite: sharp.Sharp;
   
   if (style === 'bar') {
-    const barHeight = 60;
+    const barHeight = 85;
     const overlaySVG = createRatingBar(badges, width);
     composite = sharp(posterBuffer).composite([
       { input: overlaySVG, top: height - barHeight, left: 0 },
