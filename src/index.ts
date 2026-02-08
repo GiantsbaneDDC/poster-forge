@@ -1126,11 +1126,18 @@ app.get('/', (req, res) => {
           '<div class="rating-badge"><span>' + r.source + '</span><span>' + r.value + '</span></div>'
         ).join('');
         
+        // Use previewImage (composite with overlays) if available, fallback to posterUrl
+        const imgSrc = data.previewImage || data.posterUrl || '';
+        const previewLabel = data.previewImage ? 
+          '<div style="background:var(--success);color:white;padding:6px 12px;border-radius:6px;font-size:0.75rem;margin-bottom:12px;display:inline-block;">✓ Preview with overlays</div>' : 
+          '<div style="background:var(--warning);color:white;padding:6px 12px;border-radius:6px;font-size:0.75rem;margin-bottom:12px;display:inline-block;">⚠ Original poster (no overlays)</div>';
+        
         document.getElementById('previewContent').innerHTML = 
-          '<div class="preview-poster"><img src="' + (data.posterUrl || '') + '" alt="Poster"></div>' +
+          '<div class="preview-poster">' + previewLabel + '<img src="' + imgSrc + '" alt="Poster Preview"></div>' +
           '<div class="preview-info">' +
             '<div class="preview-title">' + (data.title || currentItem.title) + '</div>' +
             '<div class="preview-year">' + (data.year || currentItem.year || '') + '</div>' +
+            '<p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:16px;">This is exactly how the poster will look when saved.</p>' +
             '<div class="preview-ratings">' + ratingsHtml + '</div>' +
           '</div>';
       } catch (err) {

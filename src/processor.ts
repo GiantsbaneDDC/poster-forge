@@ -105,16 +105,19 @@ export class PosterProcessor {
     }
   }
 
-  // Preview a single item (dry run - returns info without saving)
+  // Preview a single item - returns the actual composite poster as base64
   async preview(item: Partial<MediaItem>): Promise<{
     title: string;
     year?: number;
     posterUrl?: string;
+    previewImage?: string; // base64 data URL of the composite poster
     ratings: { source: string; value: string }[];
   } | null> {
     try {
       let imdbId: string | undefined;
       let posterPath: string | null = null;
+      let posterBuffer: Buffer | null = null;
+      let tmdbRating: number | undefined;
       let title = item.title || '';
       let year = item.year;
 
@@ -125,6 +128,10 @@ export class PosterProcessor {
         year = result.movie.release_date ? parseInt(result.movie.release_date.slice(0, 4)) : year;
         imdbId = result.imdbId || undefined;
         posterPath = result.movie.poster_path;
+        tmdbRating = result.movie.vote_average;
+        if (posterPath) {
+          posterBuffer = await this.tmdb.downloadPoster(posterPath);
+        }
       } else {
         const result = await this.tmdb.findShow(title, year);
         if (!result) return null;
@@ -132,21 +139,45 @@ export class PosterProcessor {
         year = result.show.first_air_date ? parseInt(result.show.first_air_date.slice(0, 4)) : year;
         imdbId = result.imdbId || undefined;
         posterPath = result.show.poster_path;
+        tmdbRating = result.show.vote_average;
+        if (posterPath) {
+          posterBuffer = await this.tmdb.downloadPoster(posterPath);
+        }
       }
 
       const ratings: { source: string; value: string }[] = [];
+      let omdbRatings: { imdb: { rating: string; votes: string } | null; rottenTomatoes: string | null; metacritic: string | null } = {
+        imdb: null,
+        rottenTomatoes: null,
+        metacritic: null,
+      };
       
       if (imdbId) {
-        const omdbRatings = await this.omdb.getRatings(imdbId);
-        if (omdbRatings?.imdb) ratings.push({ source: 'IMDb', value: omdbRatings.imdb.rating });
-        if (omdbRatings?.rottenTomatoes) ratings.push({ source: 'RT', value: omdbRatings.rottenTomatoes });
-        if (omdbRatings?.metacritic) ratings.push({ source: 'Metacritic', value: omdbRatings.metacritic });
+        const fetchedRatings = await this.omdb.getRatings(imdbId);
+        if (fetchedRatings) {
+          omdbRatings = fetchedRatings;
+          if (fetchedRatings.imdb) ratings.push({ source: 'IMDb', value: fetchedRatings.imdb.rating });
+          if (fetchedRatings.rottenTomatoes) ratings.push({ source: 'RT', value: fetchedRatings.rottenTomatoes });
+          if (fetchedRatings.metacritic) ratings.push({ source: 'Metacritic', value: fetchedRatings.metacritic });
+        }
+      }
+
+      // Generate the actual composite poster preview
+      let previewImage: string | undefined;
+      if (posterBuffer) {
+        const compositePoster = await createRatedPoster(posterBuffer, omdbRatings, {
+          tmdbRating,
+          style: this.config.style,
+          showRatings: this.config.ratings,
+        });
+        previewImage = 'data:image/jpeg;base64,' + compositePoster.toString('base64');
       }
 
       return {
         title,
         year,
         posterUrl: posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : undefined,
+        previewImage,
         ratings,
       };
     } catch (error) {
