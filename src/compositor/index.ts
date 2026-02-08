@@ -16,9 +16,9 @@ const BADGE_COLORS = {
 
 // Create the full rating bar with all badges properly aligned
 function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
-  const barHeight = 160; // Much taller bar
-  const iconSize = 90;
-  const fontSize = 76;
+  const barHeight = 130; // Much taller bar
+  const iconSize = 75;
+  const fontSize = 55;
   const gapBetweenRatings = 40;
   const iconTextGap = 14;
   
@@ -249,7 +249,7 @@ export async function createRatedPoster(
   }
 
   let composite: sharp.Sharp;
-  const barHeight = 160;
+  const barHeight = 130;
   
   if (style === 'bar') {
     const overlaySVG = createRatingBar(badges, width);
