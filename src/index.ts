@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { PosterProcessor, type ProcessResult } from './processor.js';
 import { getConfig, saveConfig, isConfigured, type Config } from './config.js';
+import { FolderWatcher } from './watcher.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -12,9 +13,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 let processor: PosterProcessor | null = null;
+let watcher: FolderWatcher | null = null;
+let watcherEnabled = process.env.WATCH_MODE === 'true';
 let isProcessing = false;
 let processResults: ProcessResult[] = [];
 let processProgress = { current: 0, total: 0 };
+let recentWatcherEvents: { time: Date; folder: string; title: string; success?: boolean }[] = [];
 
 // Initialize processor if configured
 function initProcessor() {
@@ -33,7 +37,44 @@ function initProcessor() {
   return false;
 }
 
+// Initialize watcher
+function initWatcher() {
+  if (!processor || !isConfigured()) return;
+  
+  // Stop existing watcher if any
+  if (watcher) {
+    watcher.stop();
+    watcher = null;
+  }
+  
+  if (!watcherEnabled) return;
+  
+  const config = getConfig();
+  watcher = new FolderWatcher({
+    mediaFolders: config.mediaFolders,
+    processor,
+    onNewMedia: (folder, title) => {
+      recentWatcherEvents.push({ time: new Date(), folder, title });
+      // Keep only last 50 events
+      if (recentWatcherEvents.length > 50) {
+        recentWatcherEvents = recentWatcherEvents.slice(-50);
+      }
+    },
+    onPosterCreated: (folder, title, success) => {
+      const event = recentWatcherEvents.find(e => e.folder === folder && e.success === undefined);
+      if (event) {
+        event.success = success;
+      }
+    }
+  });
+  
+  watcher.start();
+}
+
 initProcessor();
+if (watcherEnabled && isConfigured()) {
+  initWatcher();
+}
 
 // API: Get config
 app.get('/api/config', (req, res) => {
@@ -46,6 +87,38 @@ app.get('/api/config', (req, res) => {
     posterStyle: config.posterStyle,
     ratings: config.ratings,
     overwrite: config.overwrite,
+    watchMode: watcherEnabled,
+    watcherActive: watcher !== null,
+  });
+});
+
+// API: Get watcher status
+app.get('/api/watcher', (req, res) => {
+  res.json({
+    enabled: watcherEnabled,
+    active: watcher !== null,
+    recentEvents: recentWatcherEvents.slice(-20).reverse(),
+  });
+});
+
+// API: Toggle watcher
+app.post('/api/watcher', (req, res) => {
+  const { enabled } = req.body;
+  
+  if (typeof enabled === 'boolean') {
+    watcherEnabled = enabled;
+    
+    if (enabled && isConfigured()) {
+      initWatcher();
+    } else if (!enabled && watcher) {
+      watcher.stop();
+      watcher = null;
+    }
+  }
+  
+  res.json({ 
+    enabled: watcherEnabled, 
+    active: watcher !== null 
   });
 });
 
@@ -63,6 +136,11 @@ app.post('/api/config', (req, res) => {
   
   saveConfig(updates);
   initProcessor();
+  
+  // Restart watcher with new config if enabled
+  if (watcherEnabled && isConfigured()) {
+    initWatcher();
+  }
   
   res.json({ success: true, configured: isConfigured() });
 });
@@ -838,6 +916,31 @@ app.get('/', (req, res) => {
       </div>
     </div>
 
+    <!-- Watch Mode Card -->
+    <div class="card">
+      <div class="card-header">
+        <i data-lucide="eye"></i>
+        <h2>Watch Mode</h2>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <p style="color:var(--text-secondary);margin:0;font-size:0.9rem;">
+            Automatically generate posters when new movies or TV shows are added to your media folders.
+          </p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span id="watcherStatus" style="font-size:0.875rem;color:var(--text-muted);">Disabled</span>
+          <button class="btn btn-secondary" id="watcherToggle" onclick="toggleWatcher()">
+            <i data-lucide="power"></i> Enable
+          </button>
+        </div>
+      </div>
+      <div id="watcherEvents" class="hidden" style="margin-top:16px;max-height:200px;overflow-y:auto;">
+        <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:8px;">Recent activity:</p>
+        <div id="watcherEventsList"></div>
+      </div>
+    </div>
+
     <!-- Stats Card -->
     <div class="card hidden" id="statsCard">
       <div class="card-header">
@@ -987,8 +1090,89 @@ app.get('/', (req, res) => {
       document.getElementById('processBtn').disabled = !configured;
       document.getElementById('dryRunBtn').disabled = !configured;
       
-      if (configured) scan();
+      // Update watcher status
+      updateWatcherUI(data.watchMode, data.watcherActive);
+      
+      if (configured) {
+        scan();
+        loadWatcherEvents();
+      }
     }
+    
+    // Watcher functions
+    function updateWatcherUI(enabled, active) {
+      const statusEl = document.getElementById('watcherStatus');
+      const toggleBtn = document.getElementById('watcherToggle');
+      const eventsDiv = document.getElementById('watcherEvents');
+      
+      if (active) {
+        statusEl.textContent = '🟢 Active';
+        statusEl.style.color = 'var(--success)';
+        toggleBtn.innerHTML = '<i data-lucide="power-off"></i> Disable';
+        toggleBtn.classList.remove('btn-secondary');
+        toggleBtn.classList.add('btn-success');
+        eventsDiv.classList.remove('hidden');
+      } else if (enabled) {
+        statusEl.textContent = '🟡 Enabled (not running)';
+        statusEl.style.color = 'var(--warning)';
+        toggleBtn.innerHTML = '<i data-lucide="power"></i> Disable';
+        toggleBtn.classList.remove('btn-secondary');
+        toggleBtn.classList.add('btn-warning');
+        eventsDiv.classList.add('hidden');
+      } else {
+        statusEl.textContent = 'Disabled';
+        statusEl.style.color = 'var(--text-muted)';
+        toggleBtn.innerHTML = '<i data-lucide="power"></i> Enable';
+        toggleBtn.classList.remove('btn-success', 'btn-warning');
+        toggleBtn.classList.add('btn-secondary');
+        eventsDiv.classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+    
+    async function toggleWatcher() {
+      const res = await fetch('/api/watcher');
+      const current = await res.json();
+      
+      const toggleRes = await fetch('/api/watcher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !current.enabled }),
+      });
+      const result = await toggleRes.json();
+      
+      updateWatcherUI(result.enabled, result.active);
+      toast(result.enabled ? 'Watch mode enabled' : 'Watch mode disabled', 'success');
+      
+      if (result.active) loadWatcherEvents();
+    }
+    
+    async function loadWatcherEvents() {
+      try {
+        const res = await fetch('/api/watcher');
+        const data = await res.json();
+        
+        const listEl = document.getElementById('watcherEventsList');
+        if (data.recentEvents && data.recentEvents.length > 0) {
+          listEl.innerHTML = data.recentEvents.map(e => {
+            const time = new Date(e.time).toLocaleTimeString();
+            const icon = e.success === true ? '✅' : e.success === false ? '❌' : '⏳';
+            return '<div style="font-size:0.8rem;padding:4px 0;border-bottom:1px solid var(--border);">' + icon + ' <strong>' + e.title + '</strong> <span style="color:var(--text-muted);">(' + time + ')</span></div>';
+          }).join('');
+        } else {
+          listEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;">No recent activity</p>';
+        }
+      } catch (err) {
+        console.error('Failed to load watcher events:', err);
+      }
+    }
+    
+    // Poll watcher events every 10 seconds if active
+    setInterval(() => {
+      if (document.getElementById('watcherEvents') && !document.getElementById('watcherEvents').classList.contains('hidden')) {
+        loadWatcherEvents();
+      }
+    }, 10000);
 
     // Save config
     document.getElementById('configForm').onsubmit = async (e) => {
