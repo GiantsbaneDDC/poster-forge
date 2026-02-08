@@ -105,24 +105,97 @@ export class PosterProcessor {
     }
   }
 
+  // Preview a single item (dry run - returns info without saving)
+  async preview(item: Partial<MediaItem>): Promise<{
+    title: string;
+    year?: number;
+    posterUrl?: string;
+    ratings: { source: string; value: string }[];
+  } | null> {
+    try {
+      let imdbId: string | undefined;
+      let posterPath: string | null = null;
+      let title = item.title || '';
+      let year = item.year;
+
+      if (item.type === 'movie') {
+        const result = await this.tmdb.findMovie(title, year);
+        if (!result) return null;
+        title = result.movie.title;
+        year = result.movie.release_date ? parseInt(result.movie.release_date.slice(0, 4)) : year;
+        imdbId = result.imdbId || undefined;
+        posterPath = result.movie.poster_path;
+      } else {
+        const result = await this.tmdb.findShow(title, year);
+        if (!result) return null;
+        title = result.show.name;
+        year = result.show.first_air_date ? parseInt(result.show.first_air_date.slice(0, 4)) : year;
+        imdbId = result.imdbId || undefined;
+        posterPath = result.show.poster_path;
+      }
+
+      const ratings: { source: string; value: string }[] = [];
+      
+      if (imdbId) {
+        const omdbRatings = await this.omdb.getRatings(imdbId);
+        if (omdbRatings?.imdb) ratings.push({ source: 'IMDb', value: omdbRatings.imdb.rating });
+        if (omdbRatings?.rottenTomatoes) ratings.push({ source: 'RT', value: omdbRatings.rottenTomatoes });
+        if (omdbRatings?.metacritic) ratings.push({ source: 'Metacritic', value: omdbRatings.metacritic });
+      }
+
+      return {
+        title,
+        year,
+        posterUrl: posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : undefined,
+        ratings,
+      };
+    } catch (error) {
+      console.error('Preview error:', error);
+      return null;
+    }
+  }
+
+  // Process a single item by partial info
+  async processSingle(itemInfo: Partial<MediaItem>): Promise<ProcessResult> {
+    const item: MediaItem = {
+      folderPath: itemInfo.folderPath || '',
+      title: itemInfo.title || '',
+      year: itemInfo.year,
+      type: itemInfo.type || 'movie',
+      hasPoster: false,
+    };
+    return this.processItem(item);
+  }
+
   // Process all items in configured folders
-  async processAll(onProgress?: (result: ProcessResult, current: number, total: number) => void): Promise<ProcessResult[]> {
+  async processAll(onProgress?: (result: ProcessResult, current: number, total: number) => void, dryRun = false): Promise<ProcessResult[]> {
     const items = scanAllFolders(this.config.mediaFolders);
     const results: ProcessResult[] = [];
 
-    console.log(`Found ${items.length} media items to process`);
+    console.log(`Found ${items.length} media items to process${dryRun ? ' (dry run)' : ''}`);
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const result = await this.processItem(item);
-      results.push(result);
-
-      if (onProgress) {
-        onProgress(result, i + 1, items.length);
+      
+      if (dryRun) {
+        // For dry run, just check what would be processed
+        const wouldProcess = !item.hasPoster || this.config.overwrite;
+        results.push({
+          item,
+          success: true,
+          message: wouldProcess ? 'Would generate poster' : 'Would skip (poster exists)',
+        });
+      } else {
+        const result = await this.processItem(item);
+        results.push(result);
       }
 
-      // Rate limiting - be nice to APIs
-      await this.delay(250);
+      if (onProgress) {
+        onProgress(results[results.length - 1], i + 1, items.length);
+      }
+
+      // Rate limiting - be nice to APIs (skip delay for dry run)
+      if (!dryRun) await this.delay(250);
     }
 
     return results;
