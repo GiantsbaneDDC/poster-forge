@@ -15,34 +15,119 @@ const BADGE_COLORS = {
   tmdb: '#01D277',      // TMDB green
 };
 
-// Create a single rating badge for the bar style
-function createBarBadge(badge: RatingBadge, x: number, barHeight: number): string {
-  const { type, value, color } = badge;
-  
-  const labels: Record<string, string> = {
-    imdb: 'IMDb',
-    rt: 'RT',
-    metacritic: 'META',
-    tmdb: 'TMDB',
-  };
-
-  const badgeWidth = 70;
-  const badgeHeight = barHeight - 10;
-  const centerY = barHeight / 2;
-
+// Create IMDb logo badge (yellow rectangle with IMDb text)
+function createIMDbBadge(x: number, value: string): string {
   return `
-    <g transform="translate(${x}, 5)">
-      <!-- Badge background -->
-      <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="6" fill="${color}" />
-      <!-- Source label -->
-      <text x="${badgeWidth/2}" y="${badgeHeight * 0.38}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="rgba(0,0,0,0.8)">${labels[type]}</text>
+    <g transform="translate(${x}, 0)">
+      <!-- IMDb yellow badge -->
+      <rect x="0" y="6" width="42" height="20" rx="3" fill="${BADGE_COLORS.imdb}" />
+      <text x="21" y="21" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="13" font-weight="bold" fill="black">IMDb</text>
       <!-- Rating value -->
-      <text x="${badgeWidth/2}" y="${badgeHeight * 0.78}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="black">${value}</text>
+      <text x="52" y="22" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white">${value}</text>
     </g>
   `;
 }
 
-// Create corner badge style
+// Create Rotten Tomatoes badge (tomato icon + percentage)
+function createRTBadge(x: number, value: string): string {
+  // Fresh tomato icon as SVG path
+  return `
+    <g transform="translate(${x}, 0)">
+      <!-- Tomato icon -->
+      <g transform="translate(0, 4) scale(0.85)">
+        <!-- Tomato body -->
+        <ellipse cx="14" cy="16" rx="12" ry="11" fill="#FA320A" />
+        <!-- Tomato highlight -->
+        <ellipse cx="10" cy="13" rx="4" ry="3" fill="#FF6347" opacity="0.6" />
+        <!-- Leaf -->
+        <path d="M14 5 Q12 2 8 3 Q10 6 14 5" fill="#4CAF50" />
+        <path d="M14 5 Q16 2 20 3 Q18 6 14 5" fill="#388E3C" />
+      </g>
+      <!-- Percentage value -->
+      <text x="34" y="22" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white">${value}</text>
+    </g>
+  `;
+}
+
+// Create Metacritic badge (green M circle + score)
+function createMetacriticBadge(x: number, value: string): string {
+  return `
+    <g transform="translate(${x}, 0)">
+      <!-- Green circle with M -->
+      <circle cx="14" cy="16" r="12" fill="${BADGE_COLORS.metacritic}" />
+      <text x="14" y="21" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="bold" fill="white">M</text>
+      <!-- Score value -->
+      <text x="34" y="22" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white">${value}</text>
+    </g>
+  `;
+}
+
+// Create TMDB badge (green circle + score)
+function createTMDBBadge(x: number, value: string): string {
+  return `
+    <g transform="translate(${x}, 0)">
+      <!-- TMDB circle -->
+      <circle cx="14" cy="16" r="12" fill="${BADGE_COLORS.tmdb}" />
+      <text x="14" y="20" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="bold" fill="white">TMDB</text>
+      <!-- Score value -->
+      <text x="34" y="22" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white">${value}</text>
+    </g>
+  `;
+}
+
+// Get badge width for layout calculation
+function getBadgeWidth(badge: RatingBadge): number {
+  const valueLength = badge.value.length;
+  const baseWidth = badge.type === 'imdb' ? 52 : 34; // IMDb badge is wider
+  return baseWidth + (valueLength * 9); // Approximate text width
+}
+
+// Create the inline rating bar
+function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
+  const barHeight = 32;
+  const padding = 15;
+  const gapBetweenBadges = 20;
+  
+  // Calculate total width needed
+  let totalWidth = 0;
+  badges.forEach((badge, i) => {
+    totalWidth += getBadgeWidth(badge);
+    if (i < badges.length - 1) totalWidth += gapBetweenBadges;
+  });
+  
+  // Center the badges
+  let currentX = (posterWidth - totalWidth) / 2;
+  
+  const badgesSVG = badges.map((badge, i) => {
+    const x = currentX;
+    currentX += getBadgeWidth(badge) + gapBetweenBadges;
+    
+    switch (badge.type) {
+      case 'imdb':
+        return createIMDbBadge(x, badge.value);
+      case 'rt':
+        return createRTBadge(x, badge.value);
+      case 'metacritic':
+        return createMetacriticBadge(x, badge.value);
+      case 'tmdb':
+        return createTMDBBadge(x, badge.value);
+      default:
+        return '';
+    }
+  }).join('');
+
+  const svg = `
+    <svg width="${posterWidth}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
+      <!-- Semi-transparent black bar -->
+      <rect x="0" y="0" width="${posterWidth}" height="${barHeight}" fill="rgba(0,0,0,0.85)" />
+      ${badgesSVG}
+    </svg>
+  `;
+
+  return Buffer.from(svg);
+}
+
+// Create corner badge style (fallback)
 function createCornerBadge(badge: RatingBadge, index: number): string {
   const { type, value, color } = badge;
   
@@ -65,46 +150,6 @@ function createCornerBadge(badge: RatingBadge, index: number): string {
   `;
 }
 
-// Create minimal corner badge
-function createMinimalBadge(badge: RatingBadge, index: number): string {
-  const { type, value, color } = badge;
-  const x = 8 + (index * 38);
-  
-  return `
-    <g transform="translate(${x}, 8)">
-      <rect x="0" y="0" width="34" height="26" rx="5" fill="${color}" />
-      <text x="17" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="rgba(0,0,0,0.9)">${value}</text>
-    </g>
-  `;
-}
-
-// Create the black bar overlay with badges
-function createBarOverlay(badges: RatingBadge[], width: number, barHeight: number): Buffer {
-  const totalBadgeWidth = badges.length * 70 + (badges.length - 1) * 12; // badges + gaps
-  const startX = (width - totalBadgeWidth) / 2; // Center the badges
-  
-  const badgesSVG = badges.map((badge, i) => {
-    const x = startX + (i * 82); // 70px badge + 12px gap
-    return createBarBadge(badge, x, barHeight);
-  }).join('');
-
-  const svg = `
-    <svg width="${width}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
-      <!-- Gradient black bar for premium look -->
-      <defs>
-        <linearGradient id="barGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style="stop-color:rgba(0,0,0,0.95)" />
-          <stop offset="100%" style="stop-color:rgba(0,0,0,0.85)" />
-        </linearGradient>
-      </defs>
-      <rect x="0" y="0" width="${width}" height="${barHeight}" fill="url(#barGrad)" />
-      ${badgesSVG}
-    </svg>
-  `;
-
-  return Buffer.from(svg);
-}
-
 // Create corner badges overlay
 function createCornerOverlay(badges: RatingBadge[], width: number, height: number): Buffer {
   const badgesSVG = badges.map((badge, i) => createCornerBadge(badge, i)).join('');
@@ -116,6 +161,19 @@ function createCornerOverlay(badges: RatingBadge[], width: number, height: numbe
   `;
 
   return Buffer.from(svg);
+}
+
+// Create minimal corner badge
+function createMinimalBadge(badge: RatingBadge, index: number): string {
+  const { value, color } = badge;
+  const x = 8 + (index * 38);
+  
+  return `
+    <g transform="translate(${x}, 8)">
+      <rect x="0" y="0" width="34" height="26" rx="5" fill="${color}" />
+      <text x="17" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="rgba(0,0,0,0.9)">${value}</text>
+    </g>
+  `;
 }
 
 // Create minimal overlay
@@ -145,7 +203,7 @@ export function ratingsTooBadges(
     if (type === 'imdb' && ratings.imdb) {
       badges.push({
         type: 'imdb',
-        value: ratings.imdb.rating,
+        value: ratings.imdb.rating + '/10',
         color: BADGE_COLORS.imdb,
       });
     } else if (type === 'rt' && ratings.rottenTomatoes) {
@@ -188,7 +246,7 @@ export async function createRatedPoster(
 ): Promise<Buffer> {
   const { 
     tmdbRating, 
-    style = 'bar',  // Default to bar style now
+    style = 'bar',  // Default to bar style
     showRatings = ['imdb', 'rt', 'metacritic'] 
   } = options;
 
@@ -209,8 +267,8 @@ export async function createRatedPoster(
   let composite: sharp.Sharp;
   
   if (style === 'bar') {
-    const barHeight = 50;
-    const overlaySVG = createBarOverlay(badges, width, barHeight);
+    const barHeight = 32;
+    const overlaySVG = createRatingBar(badges, width);
     composite = sharp(posterBuffer).composite([
       { input: overlaySVG, top: height - barHeight, left: 0 },
     ]);
