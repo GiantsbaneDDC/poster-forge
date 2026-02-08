@@ -9,6 +9,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "scan": "tsx src/cli.ts scan",
+    "dry-run": "tsx src/cli.ts dry-run",
+    "test": "tsx src/cli.ts test",
+    "single": "tsx src/cli.ts single",
     "process": "tsx src/cli.ts process"
   },
   "keywords": ["plex", "jellyfin", "emby", "posters", "ratings", "imdb", "tmdb"],
