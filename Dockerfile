@@ -1,24 +1,34 @@
 # PosterForge - Docker Image
 # Similar to rpdb-folders-docker
 
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install ALL dependencies (including devDeps for build)
+COPY package*.json ./
+RUN npm ci
+
+# Copy source and build
+COPY src ./src
+COPY tsconfig.json ./
+RUN npm run build
+
+# Production image
 FROM node:20-alpine
 
 LABEL maintainer="Matt Beatty"
 LABEL description="Generate movie/TV posters with rating overlays for Plex/Jellyfin/Emby"
+LABEL org.opencontainers.image.source="https://github.com/GiantsbaneDDC/poster-forge"
 
-# Create app directory
 WORKDIR /app
 
-# Install dependencies first (better caching)
+# Install production dependencies only
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Copy source
-COPY src ./src
-COPY tsconfig.json ./
-
-# Build TypeScript
-RUN npm run build
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
 
 # Create config and media mount points
 RUN mkdir -p /posterforge/config /posterforge/media
