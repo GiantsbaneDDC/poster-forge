@@ -32,9 +32,6 @@ RUN npm ci --omit=dev
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy public assets if any
-COPY --from=builder /app/src/assets ./src/assets
-
 # Create data directory
 RUN mkdir -p /app/data
 
