@@ -35,9 +35,11 @@ export class PosterProcessor {
   // Process a single media item
   async processItem(item: MediaItem): Promise<ProcessResult> {
     const posterPath = path.join(item.folderPath, 'poster.jpg');
+    const itemLabel = `${item.title}${item.year ? ` (${item.year})` : ''}`;
 
     // Skip if poster exists and not overwriting
     if (item.hasPoster && !this.config.overwrite) {
+      console.log(`⏭️  Skipped: ${itemLabel} (poster exists)`);
       return {
         item,
         success: true,
@@ -45,6 +47,8 @@ export class PosterProcessor {
         posterPath,
       };
     }
+    
+    console.log(`🎬 Processing: ${itemLabel}...`);
 
     try {
       // Step 1: Find the media on TMDB
@@ -55,6 +59,7 @@ export class PosterProcessor {
       if (item.type === 'movie') {
         const result = await this.tmdb.findMovie(item.title, item.year);
         if (!result || !result.movie.poster_path) {
+          console.log(`❌ Not found on TMDB: ${itemLabel}`);
           return { item, success: false, message: 'Not found on TMDB' };
         }
         imdbId = imdbId || result.imdbId || undefined;
@@ -63,6 +68,7 @@ export class PosterProcessor {
       } else {
         const result = await this.tmdb.findShow(item.title, item.year);
         if (!result || !result.show.poster_path) {
+          console.log(`❌ Not found on TMDB: ${itemLabel}`);
           return { item, success: false, message: 'Not found on TMDB' };
         }
         imdbId = imdbId || result.imdbId || undefined;
@@ -93,6 +99,7 @@ export class PosterProcessor {
       // Step 4: Save poster
       fs.writeFileSync(posterPath, ratedPoster);
 
+      console.log(`✅ Poster created: ${itemLabel}`);
       return {
         item,
         success: true,
@@ -101,6 +108,7 @@ export class PosterProcessor {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
+      console.log(`❌ Error: ${itemLabel} - ${message}`);
       return { item, success: false, message };
     }
   }
