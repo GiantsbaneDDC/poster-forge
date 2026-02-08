@@ -10,24 +10,24 @@ export interface RatingBadge {
 const BADGE_COLORS = {
   imdb: '#F5C518',
   rt: '#FA320A',
-  metacritic: '#66CC33',
+  metacritic: '#FFCC34',
   tmdb: '#01D277',
 };
 
 // Create the full rating bar with all badges properly aligned
 function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
-  const barHeight = 70;
-  const iconSize = 40;
-  const fontSize = 28;
-  const gapBetweenRatings = 30;
-  const iconTextGap = 10;
+  const barHeight = 110; // Much taller bar
+  const iconSize = 60;
+  const fontSize = 38;
+  const gapBetweenRatings = 40;
+  const iconTextGap = 14;
   
   // Calculate widths for each rating
   const ratingWidths = badges.map(badge => {
-    const textWidth = badge.value.length * (fontSize * 0.6);
+    const textWidth = badge.value.length * (fontSize * 0.58);
     if (badge.type === 'metacritic') {
-      // Metacritic is just a colored box with score inside
-      return iconSize + 5;
+      // Metacritic shows icon + score text
+      return iconSize + iconTextGap + textWidth;
     }
     return iconSize + iconTextGap + textWidth;
   });
@@ -37,7 +37,7 @@ function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
   
   const centerY = barHeight / 2;
   const iconY = centerY - (iconSize / 2);
-  const textY = centerY + (fontSize * 0.35); // Vertically center text
+  const textY = centerY + (fontSize * 0.35);
   
   let svgContent = '';
   
@@ -46,8 +46,8 @@ function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
       // IMDb: Yellow rounded rectangle with "IMDb" text inside
       svgContent += `
         <g>
-          <rect x="${currentX}" y="${iconY}" width="${iconSize}" height="${iconSize}" rx="6" fill="#F5C518"/>
-          <text x="${currentX + iconSize/2}" y="${centerY + 5}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="bold" fill="#000000">IMDb</text>
+          <rect x="${currentX}" y="${iconY}" width="${iconSize}" height="${iconSize}" rx="8" fill="#F5C518"/>
+          <text x="${currentX + iconSize/2}" y="${centerY + 6}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="bold" fill="#000000">IMDb</text>
           <text x="${currentX + iconSize + iconTextGap}" y="${textY}" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF">${badge.value}</text>
         </g>
       `;
@@ -55,38 +55,43 @@ function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
       // Rotten Tomatoes: Tomato icon
       const tomatoX = currentX + iconSize/2;
       const tomatoY = centerY;
-      const tomatoR = iconSize * 0.45;
+      const tomatoR = iconSize * 0.42;
       svgContent += `
         <g>
           <!-- Tomato body -->
-          <ellipse cx="${tomatoX}" cy="${tomatoY + 2}" rx="${tomatoR}" ry="${tomatoR * 0.9}" fill="#FA320A"/>
+          <ellipse cx="${tomatoX}" cy="${tomatoY + 3}" rx="${tomatoR}" ry="${tomatoR * 0.85}" fill="#FA320A"/>
           <!-- Highlight -->
-          <ellipse cx="${tomatoX - tomatoR*0.3}" cy="${tomatoY - tomatoR*0.2}" rx="${tomatoR*0.35}" ry="${tomatoR*0.25}" fill="#FF6347" opacity="0.6"/>
+          <ellipse cx="${tomatoX - tomatoR*0.35}" cy="${tomatoY - tomatoR*0.15}" rx="${tomatoR*0.3}" ry="${tomatoR*0.22}" fill="#FF6B4A" opacity="0.7"/>
           <!-- Leaf -->
-          <ellipse cx="${tomatoX}" cy="${tomatoY - tomatoR*0.7}" rx="${tomatoR*0.5}" ry="${tomatoR*0.3}" fill="#228B22"/>
+          <ellipse cx="${tomatoX}" cy="${tomatoY - tomatoR*0.75}" rx="${tomatoR*0.55}" ry="${tomatoR*0.35}" fill="#4CAF50"/>
           <!-- Rating text -->
           <text x="${currentX + iconSize + iconTextGap}" y="${textY}" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF">${badge.value}</text>
         </g>
       `;
     } else if (badge.type === 'metacritic') {
-      // Metacritic: Colored square with score inside (color based on score)
-      const score = parseInt(badge.value) || 0;
-      let bgColor = '#66CC33'; // Green 61+
-      if (score < 40) bgColor = '#FF0000'; // Red <40
-      else if (score < 61) bgColor = '#FFCC33'; // Yellow 40-60
+      // Metacritic: Circle logo with "mc" styling + score
+      const mcX = currentX + iconSize/2;
+      const mcY = centerY;
+      const mcR = iconSize * 0.45;
       
       svgContent += `
         <g>
-          <rect x="${currentX}" y="${iconY}" width="${iconSize}" height="${iconSize}" rx="4" fill="${bgColor}"/>
-          <text x="${currentX + iconSize/2}" y="${centerY + fontSize*0.3}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="${fontSize * 0.85}" font-weight="bold" fill="#FFFFFF">${badge.value}</text>
+          <!-- Outer yellow circle -->
+          <circle cx="${mcX}" cy="${mcY}" r="${mcR}" fill="#FFCC34"/>
+          <!-- Inner dark circle -->
+          <circle cx="${mcX}" cy="${mcY}" r="${mcR * 0.78}" fill="#333333"/>
+          <!-- MC text -->
+          <text x="${mcX}" y="${mcY + 7}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="bold" fill="#FFCC34">mc</text>
+          <!-- Score text -->
+          <text x="${currentX + iconSize + iconTextGap}" y="${textY}" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF">${badge.value}</text>
         </g>
       `;
     } else if (badge.type === 'tmdb') {
-      // TMDB: Teal circle with score
+      // TMDB: Teal/dark circle with TMDB text
       svgContent += `
         <g>
           <circle cx="${currentX + iconSize/2}" cy="${centerY}" r="${iconSize/2}" fill="#0D253F"/>
-          <text x="${currentX + iconSize/2}" y="${centerY + 4}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="bold" fill="#01D277">TMDB</text>
+          <text x="${currentX + iconSize/2}" y="${centerY + 5}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="bold" fill="#01D277">TMDB</text>
           <text x="${currentX + iconSize + iconTextGap}" y="${textY}" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF">${badge.value}</text>
         </g>
       `;
@@ -96,7 +101,7 @@ function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
   });
 
   const svg = `<svg width="${posterWidth}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
-    <rect x="0" y="0" width="${posterWidth}" height="${barHeight}" fill="rgba(0,0,0,0.9)"/>
+    <rect x="0" y="0" width="${posterWidth}" height="${barHeight}" fill="rgba(0,0,0,0.92)"/>
     ${svgContent}
   </svg>`;
 
@@ -105,42 +110,43 @@ function createRatingBar(badges: RatingBadge[], posterWidth: number): Buffer {
 
 // Corner badges overlay
 function createCornerOverlay(badges: RatingBadge[], width: number, height: number): Buffer {
-  const iconSize = 45;
-  const fontSize = 22;
-  const padding = 12;
-  const gap = 55;
+  const iconSize = 55;
+  const fontSize = 28;
+  const padding = 15;
+  const gap = 70;
   
   const svgContent = badges.map((badge, i) => {
     const y = padding + (i * gap);
     const centerY = y + iconSize / 2;
     
     let badgeSvg = '';
-    const bgWidth = iconSize + 60;
+    const bgWidth = iconSize + 80;
     
-    badgeSvg += `<rect x="${padding}" y="${y}" width="${bgWidth}" height="${iconSize}" rx="8" fill="rgba(0,0,0,0.85)"/>`;
+    badgeSvg += `<rect x="${padding}" y="${y}" width="${bgWidth}" height="${iconSize}" rx="10" fill="rgba(0,0,0,0.88)"/>`;
     
     if (badge.type === 'imdb') {
       badgeSvg += `
-        <rect x="${padding + 4}" y="${y + 4}" width="${iconSize - 8}" height="${iconSize - 8}" rx="4" fill="#F5C518"/>
-        <text x="${padding + iconSize/2}" y="${centerY + 4}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="11" font-weight="bold" fill="#000">IMDb</text>
-        <text x="${padding + iconSize + 8}" y="${centerY + 7}" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFF">${badge.value}</text>
+        <rect x="${padding + 5}" y="${y + 5}" width="${iconSize - 10}" height="${iconSize - 10}" rx="6" fill="#F5C518"/>
+        <text x="${padding + iconSize/2}" y="${centerY + 5}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="14" font-weight="bold" fill="#000">IMDb</text>
+        <text x="${padding + iconSize + 10}" y="${centerY + 9}" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFF">${badge.value}</text>
       `;
     } else if (badge.type === 'rt') {
       const cx = padding + iconSize/2;
+      const r = iconSize * 0.38;
       badgeSvg += `
-        <ellipse cx="${cx}" cy="${centerY + 2}" rx="16" ry="14" fill="#FA320A"/>
-        <ellipse cx="${cx - 5}" cy="${centerY - 3}" rx="5" ry="4" fill="#FF6347" opacity="0.6"/>
-        <ellipse cx="${cx}" cy="${centerY - 12}" rx="8" ry="5" fill="#228B22"/>
-        <text x="${padding + iconSize + 8}" y="${centerY + 7}" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFF">${badge.value}</text>
+        <ellipse cx="${cx}" cy="${centerY + 2}" rx="${r}" ry="${r * 0.85}" fill="#FA320A"/>
+        <ellipse cx="${cx - r*0.3}" cy="${centerY - r*0.2}" rx="${r*0.28}" ry="${r*0.2}" fill="#FF6B4A" opacity="0.7"/>
+        <ellipse cx="${cx}" cy="${centerY - r*0.7}" rx="${r*0.5}" ry="${r*0.3}" fill="#4CAF50"/>
+        <text x="${padding + iconSize + 10}" y="${centerY + 9}" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFF">${badge.value}</text>
       `;
     } else if (badge.type === 'metacritic') {
-      const score = parseInt(badge.value) || 0;
-      let bgColor = '#66CC33';
-      if (score < 40) bgColor = '#FF0000';
-      else if (score < 61) bgColor = '#FFCC33';
+      const cx = padding + iconSize/2;
+      const r = iconSize * 0.4;
       badgeSvg += `
-        <rect x="${padding + 4}" y="${y + 4}" width="${iconSize - 8}" height="${iconSize - 8}" rx="4" fill="${bgColor}"/>
-        <text x="${padding + iconSize/2}" y="${centerY + 7}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFF">${badge.value}</text>
+        <circle cx="${cx}" cy="${centerY}" r="${r}" fill="#FFCC34"/>
+        <circle cx="${cx}" cy="${centerY}" r="${r * 0.78}" fill="#333"/>
+        <text x="${cx}" y="${centerY + 6}" text-anchor="middle" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="14" font-weight="bold" fill="#FFCC34">mc</text>
+        <text x="${padding + iconSize + 10}" y="${centerY + 9}" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFF">${badge.value}</text>
       `;
     }
     
@@ -153,20 +159,18 @@ function createCornerOverlay(badges: RatingBadge[], width: number, height: numbe
 
 // Minimal overlay
 function createMinimalOverlay(badges: RatingBadge[], width: number, height: number): Buffer {
-  const iconSize = 32;
-  const padding = 8;
+  const iconSize = 40;
+  const padding = 10;
   
   const svgContent = badges.map((badge, i) => {
-    const x = padding + (i * (iconSize + 8));
-    const score = parseInt(badge.value) || 0;
+    const x = padding + (i * (iconSize + 12));
     
     if (badge.type === 'imdb') {
-      return `<rect x="${x}" y="${padding}" width="${iconSize}" height="${iconSize}" rx="4" fill="#F5C518"/><text x="${x + iconSize/2}" y="${padding + iconSize/2 + 4}" text-anchor="middle" font-size="10" font-weight="bold" fill="#000">IMDb</text>`;
+      return `<rect x="${x}" y="${padding}" width="${iconSize}" height="${iconSize}" rx="5" fill="#F5C518"/><text x="${x + iconSize/2}" y="${padding + iconSize/2 + 5}" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">IMDb</text>`;
     } else if (badge.type === 'metacritic') {
-      let bgColor = score >= 61 ? '#66CC33' : score >= 40 ? '#FFCC33' : '#FF0000';
-      return `<rect x="${x}" y="${padding}" width="${iconSize}" height="${iconSize}" rx="4" fill="${bgColor}"/><text x="${x + iconSize/2}" y="${padding + iconSize/2 + 6}" text-anchor="middle" font-size="14" font-weight="bold" fill="#FFF">${badge.value}</text>`;
+      return `<circle cx="${x + iconSize/2}" cy="${padding + iconSize/2}" r="${iconSize/2}" fill="#FFCC34"/><circle cx="${x + iconSize/2}" cy="${padding + iconSize/2}" r="${iconSize/2 * 0.78}" fill="#333"/><text x="${x + iconSize/2}" y="${padding + iconSize/2 + 5}" text-anchor="middle" font-size="12" font-weight="bold" fill="#FFCC34">mc</text>`;
     } else if (badge.type === 'rt') {
-      return `<ellipse cx="${x + iconSize/2}" cy="${padding + iconSize/2}" rx="14" ry="12" fill="#FA320A"/>`;
+      return `<ellipse cx="${x + iconSize/2}" cy="${padding + iconSize/2}" rx="${iconSize*0.4}" ry="${iconSize*0.35}" fill="#FA320A"/>`;
     }
     return '';
   }).join('');
@@ -245,7 +249,7 @@ export async function createRatedPoster(
   }
 
   let composite: sharp.Sharp;
-  const barHeight = 70;
+  const barHeight = 110;
   
   if (style === 'bar') {
     const overlaySVG = createRatingBar(badges, width);
