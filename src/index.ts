@@ -222,17 +222,19 @@ app.post('/api/process', async (req, res) => {
 
   const dryRun = req.query.dryRun === 'true';
   const overwrite = req.query.overwrite === 'true';
+  const filterType = req.query.type as 'movie' | 'show' | undefined;
 
   isProcessing = true;
   processResults = [];
   processProgress = { current: 0, total: 0 };
 
-  res.json({ message: dryRun ? 'Dry run started' : (overwrite ? 'Regenerating all...' : 'Processing started') });
+  const typeLabel = filterType === 'movie' ? ' (movies only)' : filterType === 'show' ? ' (TV only)' : '';
+  res.json({ message: dryRun ? 'Dry run started' + typeLabel : (overwrite ? 'Regenerating...' + typeLabel : 'Processing started' + typeLabel) });
 
   try {
     processResults = await processor.processAll((result, current, total) => {
       processProgress = { current, total };
-    }, dryRun, overwrite);
+    }, dryRun, overwrite, filterType);
   } finally {
     isProcessing = false;
   }
@@ -914,6 +916,12 @@ app.get('/', (req, res) => {
         <button class="btn btn-primary" onclick="regenerateAll()" id="regenBtn" disabled>
           <i data-lucide="refresh-cw"></i> Regenerate All
         </button>
+        <button class="btn btn-secondary" onclick="processMoviesOnly()" id="moviesBtn" disabled>
+          <i data-lucide="film"></i> Movies Only
+        </button>
+        <button class="btn btn-secondary" onclick="processShowsOnly()" id="showsBtn" disabled>
+          <i data-lucide="tv"></i> TV Only
+        </button>
         <button class="btn btn-secondary" onclick="refresh()">
           <i data-lucide="rotate-ccw"></i> Refresh
         </button>
@@ -1093,6 +1101,8 @@ app.get('/', (req, res) => {
       document.getElementById('configAlert').classList.toggle('hidden', configured);
       document.getElementById('processBtn').disabled = !configured;
       document.getElementById('regenBtn').disabled = !configured;
+      document.getElementById('moviesBtn').disabled = !configured;
+      document.getElementById('showsBtn').disabled = !configured;
       document.getElementById('dryRunBtn').disabled = !configured;
       
       // Update watcher status
@@ -1386,10 +1396,32 @@ app.get('/', (req, res) => {
       if (!confirm('Really sure? This cannot be undone!')) return;
       await runProcess(false, true);
     }
+    
+    // Process movies only
+    async function processMoviesOnly() {
+      const choice = confirm('MOVIES ONLY\\n\\nOK = Generate missing posters\\nCancel then confirm = Regenerate ALL movie posters');
+      if (choice) {
+        await runProcess(false, false, 'movie');
+      } else if (confirm('Regenerate ALL movie posters (overwrite existing)?')) {
+        await runProcess(false, true, 'movie');
+      }
+    }
+    
+    // Process TV shows only
+    async function processShowsOnly() {
+      const choice = confirm('TV SHOWS ONLY\\n\\nOK = Generate missing posters\\nCancel then confirm = Regenerate ALL TV posters');
+      if (choice) {
+        await runProcess(false, false, 'show');
+      } else if (confirm('Regenerate ALL TV show posters (overwrite existing)?')) {
+        await runProcess(false, true, 'show');
+      }
+    }
 
-    async function runProcess(dryRun, overwrite = false) {
+    async function runProcess(dryRun, overwrite = false, filterType = null) {
       document.getElementById('processBtn').disabled = true;
       document.getElementById('regenBtn').disabled = true;
+      document.getElementById('moviesBtn').disabled = true;
+      document.getElementById('showsBtn').disabled = true;
       document.getElementById('dryRunBtn').disabled = true;
       document.getElementById('progressContainer').classList.add('active');
       
@@ -1397,6 +1429,7 @@ app.get('/', (req, res) => {
       const params = [];
       if (dryRun) params.push('dryRun=true');
       if (overwrite) params.push('overwrite=true');
+      if (filterType) params.push('type=' + filterType);
       if (params.length) url += '?' + params.join('&');
       
       await fetch(url, { method: 'POST' });
@@ -1418,6 +1451,8 @@ app.get('/', (req, res) => {
         polling = null;
         document.getElementById('processBtn').disabled = false;
         document.getElementById('regenBtn').disabled = false;
+        document.getElementById('moviesBtn').disabled = false;
+        document.getElementById('showsBtn').disabled = false;
         document.getElementById('dryRunBtn').disabled = false;
         document.getElementById('progressContainer').classList.remove('active');
         toast('Complete! ' + data.summary.success + ' succeeded, ' + data.summary.failed + ' failed.', 'success');

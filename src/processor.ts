@@ -217,8 +217,14 @@ export class PosterProcessor {
   }
 
   // Process all items in configured folders
-  async processAll(onProgress?: (result: ProcessResult, current: number, total: number) => void, dryRun = false, overwriteAll = false): Promise<ProcessResult[]> {
-    const items = scanAllFolders(this.config.mediaFolders);
+  async processAll(onProgress?: (result: ProcessResult, current: number, total: number) => void, dryRun = false, overwriteAll = false, filterType?: 'movie' | 'show'): Promise<ProcessResult[]> {
+    let items = scanAllFolders(this.config.mediaFolders);
+    
+    // Filter by type if specified
+    if (filterType) {
+      items = items.filter(item => item.type === filterType);
+    }
+    
     const results: ProcessResult[] = [];
     
     // Temporarily set overwrite if regenerating all
@@ -227,7 +233,8 @@ export class PosterProcessor {
       this.config.overwrite = true;
     }
 
-    console.log(`Found ${items.length} media items to process${dryRun ? ' (dry run)' : ''}${overwriteAll ? ' (overwrite all)' : ''}`);
+    const typeLabel = filterType === 'movie' ? ' (movies only)' : filterType === 'show' ? ' (TV shows only)' : '';
+    console.log(`Found ${items.length} media items to process${dryRun ? ' (dry run)' : ''}${overwriteAll ? ' (overwrite all)' : ''}${typeLabel}`);
 
     try {
       for (let i = 0; i < items.length; i++) {
