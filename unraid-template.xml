@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>posterforge</Name>
+  <Repository>ghcr.io/giantsbaneddc/poster-forge:latest</Repository>
+  <Registry>https://github.com/GiantsbaneDDC/poster-forge</Registry>
+  <Network>bridge</Network>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/GiantsbaneDDC/poster-forge</Support>
+  <Project>https://github.com/GiantsbaneDDC/poster-forge</Project>
+  <Overview>
+    PosterForge - Free alternative to RPDB.
+    Generate movie/TV posters with IMDB, Rotten Tomatoes, and Metacritic rating overlays.
+    Works with Plex, Jellyfin, and Emby.
+  </Overview>
+  <Category>MediaApp:Other</Category>
+  <WebUI>http://[IP]:[PORT:8750]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/GiantsbaneDDC/poster-forge/master/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled></DateInstalled>
+  <Description>
+    PosterForge generates movie and TV show posters with rating overlays (IMDB, Rotten Tomatoes, Metacritic).
+    Free alternative to RPDB - uses free TMDB and OMDB APIs.
+    Scans your media folders and creates poster.jpg files that Plex/Jellyfin/Emby pick up automatically.
+  </Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>8750</HostPort>
+        <ContainerPort>8750</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/posterforge/</HostDir>
+      <ContainerDir>/posterforge/config</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/PlexMedia/</HostDir>
+      <ContainerDir>/posterforge/media</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  <Environment>
+    <Variable>
+      <Value></Value>
+      <Name>TMDB_API_KEY</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value></Value>
+      <Name>OMDB_API_KEY</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>/posterforge/media</Value>
+      <Name>MEDIA_FOLDERS</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>badges</Value>
+      <Name>POSTER_STYLE</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>imdb,rt,metacritic</Value>
+      <Name>RATINGS</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>false</Value>
+      <Name>OVERWRITE</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+  <Labels/>
+  <Config Name="Web UI Port" Target="8750" Default="8750" Mode="tcp" Description="Web UI port" Type="Port" Display="always" Required="true" Mask="false">8750</Config>
+  <Config Name="Config Path" Target="/posterforge/config" Default="/mnt/user/appdata/posterforge/" Mode="rw" Description="Config storage" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/posterforge/</Config>
+  <Config Name="Media Path" Target="/posterforge/media" Default="/mnt/user/PlexMedia/" Mode="rw" Description="Your Plex/Jellyfin media folder" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/PlexMedia/</Config>
+  <Config Name="TMDB API Key" Target="TMDB_API_KEY" Default="" Mode="" Description="Get from themoviedb.org" Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="OMDB API Key" Target="OMDB_API_KEY" Default="" Mode="" Description="Get from omdbapi.com" Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Poster Style" Target="POSTER_STYLE" Default="badges" Mode="" Description="badges, bar, or minimal" Type="Variable" Display="always" Required="false" Mask="false">badges</Config>
+  <Config Name="Ratings" Target="RATINGS" Default="imdb,rt,metacritic" Mode="" Description="Which ratings to show (max 3)" Type="Variable" Display="always" Required="false" Mask="false">imdb,rt,metacritic</Config>
+  <Config Name="Overwrite" Target="OVERWRITE" Default="false" Mode="" Description="Overwrite existing posters?" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+</Container>
